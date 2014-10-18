@@ -26,7 +26,7 @@ url_vol_no      = "/camera/BS?t={0}&p=%00"
 url_del_last    = "/camera/DL?t={0}&p=%00"
 url_led_no      = "/camera/LB?t={0}&p=%00"
 url_autooff_no  = "/camera/AO?t={0}&p=%00"
-url_photres_8M  = "/camera/PR?t={0}&p=%00"
+url_photres_7M  = "/camera/PR?t={0}&p=%04"
 
 
 # create a daily job for a specific time
@@ -104,7 +104,7 @@ class GoPro(object):
         self.send_cmd(url_vol_no)
         self.send_cmd(url_led_no)
         self.send_cmd(url_autooff_no)
-        #self.send_cmd(url_photres_8M)
+        self.send_cmd(url_photres_7M)
 
     def takepic(self):
         print "- takepic"
@@ -137,18 +137,20 @@ class GoPro(object):
                     break
                 f.write(chunk)
                 print f.tell(), "\r",
+                stdout.flush()
 
 
 def set_timelapse(args):
     print "seting up gopro for timelpase"
-    # with GoPro(args.password).awake() as gopro:
-    #     gopro.setup()
+    with GoPro(args.password).awake() as gopro:
+        gopro.setup()
+
     from_, to = args.timespan
 
     import sys, os.path
     path = os.path.abspath(__file__)
 
-    new_cron_between(from_, to, args.interval, "%s %s takepic" % (sys.executable, path))
+    new_cron_between(from_, to, args.interval, "%s %s -p %s takepic" % (sys.executable, path, args.password))
 
 
 def run_action(args):
@@ -163,7 +165,7 @@ if __name__=="__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description='GoPro Commander')
-    parser.add_argument('-p', '--password', type=str, required=True, help='GoPro WiFi Password')
+    parser.add_argument('-p', '--password', type=str, help='GoPro WiFi Password')
     subparsers = parser.add_subparsers()
 
     parser_timelapse = subparsers.add_parser('timelapse')
@@ -174,6 +176,12 @@ if __name__=="__main__":
     for action in "setup sleep wake takepic".split():
         parser_action = subparsers.add_parser(action).set_defaults(func=run_action, action=action)
 
+    from commands import menu
+    parser_action = subparsers.add_parser("menu").set_defaults(func=lambda args: menu(args.password))
+
     args = parser.parse_args()
+    if not args.password:
+        from getpass import getpass
+        args.password = getpass("Enter WiFi password: ")
     args.func(args)
 

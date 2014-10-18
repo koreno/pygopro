@@ -198,9 +198,8 @@ COMMANDS = {
 URL = "http://10.5.5.9/{0}/{1}?t={PASSWORD}&p=%{2}"
 
 
-if __name__=="__main__":
+def menu(password):
 
-    from getpass import getpass
     from functools import partial
     from menu import AppMenu
     import requests
@@ -230,6 +229,4 @@ if __name__=="__main__":
             print(d)
 
     action_tree = convert(COMMANDS, make_action)
-    password = getpass("Enter Password: ")
-    print
     menu("GoPro", action_tree)
