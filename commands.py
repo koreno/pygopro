@@ -1,12 +1,12 @@
 def show_state(status):
-    from .status import parse_status
+    from status import parse_status
     ret = parse_status(status)
     print(ret)
     raw_input("Enter to continue")
     return status
 
 
-URL = "http://10.5.5.9/{0}/{1}?t={PASSWORD}&p=%{2}"
+URL = "http://10.5.5.9/{0}/{1}?t={PASSWORD}"
 
 COMMANDS = {
     "Basics" : {
@@ -215,29 +215,29 @@ def menu(password):
     from menu import AppMenu
     import requests
 
-    def make_action(params):
+    def make_action((params, callback)):
         def action():
-            url = URL.format(*params, PASSWORD=password)
-            print url,
+            assert len(params)<=3
+            url = URL.format(*params[:2], PASSWORD=password)
+            if len(params) > 2:
+                url += "&p=%" + params[2]
+            print url, "->",
             ret = requests.get(url)
-            print ret
+            print ret, "->",
+            if callback:
+                print "..."
+                return callback(ret.content)
+            else:
+                print repr(ret.content)
         return action
 
-    def convert(d, typ):
+    def convert(d, typ, parents=[]):
         if isinstance(d, dict):
-            return dict(zip(d, (convert(v, typ) for v in d.itervalues())))
-        return typ(d)
-
-    def menu(title, d):
-        if isinstance(d, dict):
-            AppMenu.show_menu(title, [
-                (name, partial(menu, "%s >> %s" % (title, name), value))
-                for name, value in sorted(d.items())
-            ])
-        elif callable(d):
-            d()
+            for (k, v) in d.iteritems():
+                for item in convert(v, make_action, parents=parents+[k]):
+                    yield item
         else:
-            print(d)
+            yield " - ".join(parents), typ(d)
 
-    action_tree = convert(COMMANDS, make_action)
-    menu("GoPro", action_tree)
+    actions = sorted(convert(COMMANDS, make_action))
+    AppMenu.show_menu("GoPro", actions)

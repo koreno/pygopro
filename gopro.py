@@ -7,8 +7,6 @@ import sys
 import re
 import os
 
-from crontab import CronTab
-
 # author: Adrian Sitterle
 
 url_base = "http://10.5.5.9"
@@ -35,6 +33,8 @@ url_delete_all  = "/camera/DA?t={0}"
 # create a daily job for a specific time
 def new_cron_specifictime(minute, hour, cmd):
 
+    from crontab import CronTab
+
     tab = CronTab(user=True)
 
     cron_job = tab.new(cmd, comment='via %s' % __file__)
@@ -50,6 +50,8 @@ def new_cron_specifictime(minute, hour, cmd):
 
 
 def new_cron_between(hour_start, hour_end, repeat_every, cmd):
+
+    from crontab import CronTab
 
     tab = CronTab(user=True)
 
