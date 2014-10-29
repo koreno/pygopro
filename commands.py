@@ -212,7 +212,7 @@ COMMANDS = {
 def menu(password):
 
     from functools import partial
-    from menu import AppMenu
+    from termenu.app import AppMenu
     import requests
 
     def make_action((params, callback)):
