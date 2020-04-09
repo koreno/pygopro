@@ -240,4 +240,4 @@ def menu(password):
             yield " - ".join(parents), typ(d)
 
     actions = sorted(convert(COMMANDS, make_action))
-    AppMenu.show_menu("GoPro", actions)
+    AppMenu.show("GoPro", actions)

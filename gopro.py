@@ -1,6 +1,8 @@
 #!/usr/bin/env python2
 
+from subprocess import check_call
 from contextlib import contextmanager
+from urllib2 import URLError
 import urllib2
 import time
 import sys
@@ -28,6 +30,9 @@ url_autooff_no  = "/camera/AO?t={0}&p=%00"
 url_photres_7M  = "/camera/PR?t={0}&p=%04"
 url_delete_last = "/camera/DL?t={0}"
 url_delete_all  = "/camera/DA?t={0}"
+url_status      = "/camera/se?t={0}"
+
+SHOW_PROGRESS = sys.stdout.isatty()
 
 
 # create a daily job for a specific time
@@ -68,14 +73,15 @@ def new_cron_between(hour_start, hour_end, repeat_every, cmd):
     print tab.render()
     tab.write()     
 
-
-def sleep(s):
-    for i in range(s, 0, -1):
-        print i,
-        sys.stdout.flush()
-        time.sleep(1)
-    print
-    
+if SHOW_PROGRESS:
+    def go_sleep(s):
+        for i in range(s, 0, -1):
+            print i, "\r",
+            sys.stdout.flush()
+            time.sleep(1)
+        print
+else:
+    go_sleep = time.sleep
 
 def wakeup(func):
     def f(self, *args, **kwargs):
@@ -88,33 +94,34 @@ class GoPro(object):
 
     def __init__(self, password):
         self.password = password
-        self._awaked = []
+        self._awaked = 0
 
-    def send_cmd(self, cmd):
+    def send_cmd(self, cmd, sleep=1):
         url = url_base + cmd.format(self.password)
         result = urllib2.urlopen(url).read()
-        sleep(1)
+        go_sleep(sleep)
+        return result
 
     @contextmanager
     def awake(self):
         if not self._awaked:
             self.wake()
-        self._awaked.append(True)
+        self._awaked += 1
         try:
             yield self
         finally:
-            self._awaked.pop(-1)
+            self._awaked -= 1
             if not self._awaked:
-                self.sleep()
+                self.off()
 
-    def sleep(self):
-        print "- sleep"
+    def off(self):
+        print "- off"
         self.send_cmd(url_gopro_off)
 
     def wake(self):
         print "- wake"
-        self.send_cmd(url_gopro_on)
-        sleep(5)        # wait till gopro wakes up
+        self.send_cmd(url_gopro_on, sleep=5)
+        # wait till gopro wakes up
 
     @wakeup
     def setup(self):
@@ -127,10 +134,10 @@ class GoPro(object):
     @wakeup
     def takepic(self):
         print "- takepic"
-        self.send_cmd(url_mode_photo)
-        sleep(5)        # wait for photo mode to turn on
-        self.send_cmd(url_shutter_on)
-        sleep(5)        # wait for photo to be taken
+        self.send_cmd(url_mode_photo, sleep=5)
+        # wait for photo mode to turn on
+        self.send_cmd(url_shutter_on, sleep=5)
+        # wait for photo to be taken
 
     @wakeup
     def download(self, last=True):
@@ -155,7 +162,9 @@ class GoPro(object):
                     if not chunk:
                         break
                     f.write(chunk)
-                    print f.tell(), "\r",
+                    if SHOW_PROGRESS:
+                        print f.tell(), "\r",
+                if SHOW_PROGRESS:
                     sys.stdout.flush()
             return pic
 
@@ -167,50 +176,82 @@ class GoPro(object):
     @wakeup
     def delete(self, last=True):
         print "- delete"
-        self.send_cmd(url_delete_last if last else url_delete_all)
-        sleep(5)
+        self.send_cmd(url_delete_last if last else url_delete_all, sleep=5)
+
+    @wakeup
+    def get_status(self):
+        return self.send_cmd(url_status)
 
     def lapse(self):
         print "- lapse"
         with self.awake():
             self.takepic()
             pic = self.download(last=True)
-        upload(pic, pic)
+            stat = self.get_status()
+        stat_file = "gopro-status.dat"
+        with open(stat_file, "wb") as f:
+            f.write(stat)
+        upload(stat_file)
+        upload(pic)
         os.unlink(pic)
 
 
-class UploadError(Exception):
-    pass
+def execute(*params):
+    try:
+        check_call(params)
+    except:
+        print(" ".join(params))
+        raise
 
 
-def upload(src, target):
-    from subprocess import Popen, PIPE
-    p = Popen(["dropbox_uploader.sh", "upload", src, target], stdout=PIPE, stderr=PIPE)
-    out, err = p.communicate()
-    rc = p.wait()
-    sys.stdout.write(out)
-    sys.stderr.write(err)
-    if rc != 0:
-        raise UploadError()
+def resize(pic, ratio):
+    print "- resizing image"
+    params = ["-resize", "{0}%".format(int(100%ratio)), pic]
+    if SHOW_PROGRESS:
+        params.insert(0, "-monitor")
+    execute("/usr/bin/mogrify", *params)
+
+
+def make_timelapse(anim):
+    print "- making animation"
+    params = ["-morph", "3", "*.JPG", anim]
+    if SHOW_PROGRESS:
+        params.insert(0, "-monitor")
+    execute("/usr/bin/convert", *params)
+
+
+def upload(src):
+    print("- upload (%s)" % src)
+    params = ["upload", src, "."]
+    if SHOW_PROGRESS:
+        params.insert(0, "-p")
+    execute("/usr/local/bin/dropbox_uploader.sh", *params)
+    print("- done uploading")
 
 
 def set_timelapse(args):
-    print "seting up gopro for timelpase"
-    with GoPro(args.password).awake() as gopro:
-        gopro.setup()
+    if args.setup:
+        print "seting up gopro for timelpase"
+        with GoPro(args.password).awake() as gopro:
+            gopro.setup()
 
     from_, to = args.timespan
 
     import sys, os.path
     path = os.path.abspath(__file__)
 
-    new_cron_between(from_, to, args.interval, "%s %s -p %s lapse" % (sys.executable, path, args.password))
+    new_cron_between(from_, to, args.interval, "%s %s -p %s lapse 2>&1 | logger -t gopro" % (sys.executable, path, args.password))
 
 
 def run_action(args):
     print "running action: ", args.action
     gopro = GoPro(args.password)
     func = getattr(gopro, args.action)()
+
+
+def restart():
+    open("do_lapse", "w")
+    os.system("sudo reboot")
 
 
 if __name__=="__main__":
@@ -223,6 +264,7 @@ if __name__=="__main__":
 
     parser_timelapse = subparsers.add_parser('timelapse')
     parser_timelapse.add_argument('-b', '--between', dest='timespan', metavar="HOUR", nargs=2, type=int, default=(0,0), help='Hours between which to do the TimeLapse')
+    parser_timelapse.add_argument('-s', '--setup', action="store_true", help='Set up camera for timelapse (7MP Photo, no leds, no volume, no auto-off)')
     parser_timelapse.add_argument('interval', metavar='interval', type=int, help='The interval in minutes between photos')
     parser_timelapse.set_defaults(func=set_timelapse)
 
@@ -236,5 +278,11 @@ if __name__=="__main__":
     if not args.password:
         from getpass import getpass
         args.password = getpass("Enter WiFi password: ")
-    args.func(args)
+
+    try:
+        args.func(args)
+    except URLError as e:
+        if e.reason.errno in (110, 113):
+            restart()
+        raise
 
