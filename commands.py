@@ -1,240 +1,248 @@
+from collections import namedtuple
+
+
+class Action(namedtuple("Action", "params callback", defaults=[None])):
+    pass
+
+
 def show_state(status):
     from status import parse_status
     ret = parse_status(status)
     print(ret)
-    raw_input("Enter to continue")
+    input("Enter to continue")
     return status
 
 
 URL = "http://10.5.5.9/{0}/{1}?t={PASSWORD}"
 
 COMMANDS = {
-    "Basics" : {
-         "Turn GoPro OFF":         (("bacpac", "PW", "00"), None),
-         "Turn GoPro ON":          (("bacpac", "PW", "01"), None),
-         "Shutter":                (("bacpac", "SH", "01"), None),
-         "Stop":                   (("bacpac", "SH", "00"), None),
-         "Preview ON":             (("camera", "PV", "02"), None),
-         "Preview OFF":            (("camera", "PV", "00"), None),
+    "Basics": {
+        "Turn GoPro OFF":         Action(("bacpac", "PW", "00")),
+        "Turn GoPro ON":          Action(("bacpac", "PW", "01")),
+        "Shutter":                Action(("bacpac", "SH", "01")),
+        "Stop":                   Action(("bacpac", "SH", "00")),
+        "Preview ON":             Action(("camera", "PV", "02")),
+        "Preview OFF":            Action(("camera", "PV", "00")),
     },
-    "Mode" : {
-         "Video Mode":             (("camera", "CM", "00"), None),
-         "Photo Mode":             (("camera", "CM", "01"), None),
-         "Burst Mode":             (("camera", "CM", "02"), None),
-         "Timelapse Mode":         (("camera", "CM", "03"), None),
-         "Timer Mode (hero2)":     (("camera", "CM", "04"), None),
-         "Play HDMI":              (("camera", "CM", "05"), None),
+    "Mode": {
+        "Video Mode":             Action(("camera", "CM", "00")),
+        "Photo Mode":             Action(("camera", "CM", "01")),
+        "Burst Mode":             Action(("camera", "CM", "02")),
+        "Timelapse Mode":         Action(("camera", "CM", "03")),
+        "Timer Mode (hero2)":     Action(("camera", "CM", "04")),
+        "Play HDMI":              Action(("camera", "CM", "05")),
     },
-    "Orientation" : {
-         "Orientation UP":         (("camera", "UP", "00"), None),
-         "Orientation DOWN":       (("camera", "UP", "01"), None),
+    "Orientation": {
+        "Orientation UP":         Action(("camera", "UP", "00")),
+        "Orientation DOWN":       Action(("camera", "UP", "01")),
     },
-    "Video resolutions HERO2 and HERO3 silver" : {
-         "WVGA 60":                (("camera", "VR", "00"), None),
-         "WVGA 120":               (("camera", "VR", "01"), None),
-         "720 30":                 (("camera", "VR", "02"), None),
-         "720 60":                 (("camera", "VR", "03"), None),
-         "960 30":                 (("camera", "VR", "04"), None),
-         "960 48":                 (("camera", "VR", "05"), None),
-         "1080 30":                (("camera", "VR", "06"), None),
+    "Video resolutions HERO2 and HERO3 silver": {
+        "WVGA 60":                Action(("camera", "VR", "00")),
+        "WVGA 120":               Action(("camera", "VR", "01")),
+        "720 30":                 Action(("camera", "VR", "02")),
+        "720 60":                 Action(("camera", "VR", "03")),
+        "960 30":                 Action(("camera", "VR", "04")),
+        "960 48":                 Action(("camera", "VR", "05")),
+        "1080 30":                Action(("camera", "VR", "06")),
     },
-    "Video resolutions Black edition" : {
-         "4kCin12":                (("camera", "VV", "08"), None),
-         "2.7kCin24":              (("camera", "VV", "07"), None),
-         "4k 15":                  (("camera", "VV", "06"), None),
-         "2.7k 30":                (("camera", "VV", "05"), None),
-         "1440p 40":               (("camera", "VV", "04"), None),
-         "1080 60":                (("camera", "VV", "03"), None),
-         "1080 30":                (("camera", "VR", "05"), None),
-         "960 48":                 (("camera", "VR", "06"), None),
-         "960 100":                (("camera", "VV", "02"), None),
-         "720 120":                (("camera", "VV", "01"), None),
-         "WVGA 240":               (("camera", "VV", "00"), None),
+    "Video resolutions Black edition": {
+        "4kCin12":                Action(("camera", "VV", "08")),
+        "2.7kCin24":              Action(("camera", "VV", "07")),
+        "4k 15":                  Action(("camera", "VV", "06")),
+        "2.7k 30":                Action(("camera", "VV", "05")),
+        "1440p 40":               Action(("camera", "VV", "04")),
+        "1080 60":                Action(("camera", "VV", "03")),
+        "1080 30":                Action(("camera", "VR", "05")),
+        "960 48":                 Action(("camera", "VR", "06")),
+        "960 100":                Action(("camera", "VV", "02")),
+        "720 120":                Action(("camera", "VV", "01")),
+        "WVGA 240":               Action(("camera", "VV", "00")),
     },
-    "Video resolutions HERO3+Black" : {
-        "4K":                      (("camera", "VV", "06"), None),
-        "4K 17:9":                 (("camera", "VV", "08"), None),
-        "4K 15FPS":                (("camera", "FS", "01"), None),
-        "4K 12FPS":                (("camera", "FS", "00"), None),
-        "2.7k":                    (("camera", "VV", "05"), None),
-        "2.7k 24FPS":              (("camera", "FS", "02"), None),
-        "2.7k 30FPS":              (("camera", "FS", "04"), None),
-        "2K":                      (("camera", "VV", "07"), None),
-        "1440p":                   (("camera", "VV", "04"), None),
-        "1440 48FPS":              (("camera", "FS", "05"), None),
-        "1080 SuperView":          (("camera", "VV", "09"), None),
-        "1080":                    (("camera", "VV", "03"), None),
-        "960p":                    (("camera", "VV", "02"), None),
-        "720 SuperView":           (("camera", "VV", "0a"), None),
-        "720p":                    (("camera", "VV", "01"), None),
+    "Video resolutions HERO3+Black": {
+        "4K":                      Action(("camera", "VV", "06")),
+        "4K 17:9":                 Action(("camera", "VV", "08")),
+        "4K 15FPS":                Action(("camera", "FS", "01")),
+        "4K 12FPS":                Action(("camera", "FS", "00")),
+        "2.7k":                    Action(("camera", "VV", "05")),
+        "2.7k 24FPS":              Action(("camera", "FS", "02")),
+        "2.7k 30FPS":              Action(("camera", "FS", "04")),
+        "2K":                      Action(("camera", "VV", "07")),
+        "1440p":                   Action(("camera", "VV", "04")),
+        "1440 48FPS":              Action(("camera", "FS", "05")),
+        "1080 SuperView":          Action(("camera", "VV", "09")),
+        "1080":                    Action(("camera", "VV", "03")),
+        "960p":                    Action(("camera", "VV", "02")),
+        "720 SuperView":           Action(("camera", "VV", "0a")),
+        "720p":                    Action(("camera", "VV", "01")),
     },
-    "Frame rate" : {
-         "FPS12":                  (("camera", "FS", "00"), None),
-         "FPS15":                  (("camera", "FS", "01"), None),
-         "FPS12p5":                (("camera", "FS", "0b"), None),
-         "FPS24":                  (("camera", "FS", "02"), None),
-         "FPS25":                  (("camera", "FS", "03"), None),
-         "FPS30":                  (("camera", "FS", "04"), None),
-         "FPS4":                   (("camera", "FS", "05"), None),
-         "FPS50":                  (("camera", "FS", "06"), None),
-         "FPS60":                  (("camera", "FS", "07"), None),
-         "FPS100":                 (("camera", "FS", "08"), None),
-         "FPS120":                 (("camera", "FS", "09"), None),
-         "FPS240":                 (("camera", "FS", "0a"), None),
+    "Frame rate": {
+        "FPS12":                  Action(("camera", "FS", "00")),
+        "FPS15":                  Action(("camera", "FS", "01")),
+        "FPS12p5":                Action(("camera", "FS", "0b")),
+        "FPS24":                  Action(("camera", "FS", "02")),
+        "FPS25":                  Action(("camera", "FS", "03")),
+        "FPS30":                  Action(("camera", "FS", "04")),
+        "FPS4":                   Action(("camera", "FS", "05")),
+        "FPS50":                  Action(("camera", "FS", "06")),
+        "FPS60":                  Action(("camera", "FS", "07")),
+        "FPS100":                 Action(("camera", "FS", "08")),
+        "FPS120":                 Action(("camera", "FS", "09")),
+        "FPS240":                 Action(("camera", "FS", "0a")),
     },
-    "Fov" : {
-         "wide":                   (("camera", "FV", "00"), None),
-         "medium":                 (("camera", "FV", "01"), None),
-         "narrow":                 (("camera", "FV", "02"), None),
+    "Fov": {
+        "wide":                   Action(("camera", "FV", "00")),
+        "medium":                 Action(("camera", "FV", "01")),
+        "narrow":                 Action(("camera", "FV", "02")),
     },
-    "Photo resolution HERO2 and HERO3 silver" : {
-         "11mpW":                  (("camera", "PR", "00"), None),
-         "8mpM":                   (("camera", "PR", "01"), None),
-         "5mpW":                   (("camera", "PR", "02"), None),
-         "5mpM":                   (("camera", "PR", "03"), None),
+    "Photo resolution HERO2 and HERO3 silver": {
+        "11mpW":                  Action(("camera", "PR", "00")),
+        "8mpM":                   Action(("camera", "PR", "01")),
+        "5mpW":                   Action(("camera", "PR", "02")),
+        "5mpM":                   Action(("camera", "PR", "03")),
     },
-    "Timelapse Interval" : {
-         "0,5 sec":                (("camera", "TI", "00"), None),
-         "1sec":                   (("camera", "TI", "01"), None),
-         "5sec":                   (("camera", "TI", "05"), None),
-         "10sec":                  (("camera", "TI", "0a"), None),
-         "30sec":                  (("camera", "TI", "1e"), None),
-         "60sec":                  (("camera", "TI", "3c"), None),
+    "Timelapse Interval": {
+        "0,5 sec":                Action(("camera", "TI", "00")),
+        "1sec":                   Action(("camera", "TI", "01")),
+        "5sec":                   Action(("camera", "TI", "05")),
+        "10sec":                  Action(("camera", "TI", "0a")),
+        "30sec":                  Action(("camera", "TI", "1e")),
+        "60sec":                  Action(("camera", "TI", "3c")),
     },
-    "Volume" : {
-         "no sound":               (("camera", "BS", "00"), None),
-         "70%":                    (("camera", "BS", "01"), None),
-         "100%":                   (("camera", "BS", "02"), None),
+    "Volume": {
+        "no sound":               Action(("camera", "BS", "00")),
+        "70%":                    Action(("camera", "BS", "01")),
+        "100%":                   Action(("camera", "BS", "02")),
     },
-    "White Balance HERO3 ONLY IF Protune ON" : {
-         "auto":                   (("camera", "WB", "00"), None),
-         "3000k":                  (("camera", "WB", "01"), None),
-         "5500k":                  (("camera", "WB", "02"), None),
-         "6500k":                  (("camera", "WB", "03"), None),
-         "CAMRAW":                 (("camera", "WB", "04"), None),
+    "White Balance HERO3 ONLY IF Protune ON": {
+        "auto":                   Action(("camera", "WB", "00")),
+        "3000k":                  Action(("camera", "WB", "01")),
+        "5500k":                  Action(("camera", "WB", "02")),
+        "6500k":                  Action(("camera", "WB", "03")),
+        "CAMRAW":                 Action(("camera", "WB", "04")),
     },
-    "Continuous Shot (HERO3)" : {
-         "Single":                 (("camera", "CS", "00"), None),
-         "3SPS":                   (("camera", "CS", "03"), None),
-         "5SPS":                   (("camera", "CS", "05"), None),
-         "10SPS":                  (("camera", "CS", "0a"), None),
+    "Continuous Shot (HERO3)": {
+        "Single":                 Action(("camera", "CS", "00")),
+        "3SPS":                   Action(("camera", "CS", "03")),
+        "5SPS":                   Action(("camera", "CS", "05")),
+        "10SPS":                  Action(("camera", "CS", "0a")),
     },
-    "Burst Rate HERO3" : {
-         "3/1s":                   (("camera", "BU", "00"), None),
-         "10/1s":                  (("camera", "BU", "02"), None),
-         "10/2s":                  (("camera", "BU", "03"), None),
-         "30/1s":                  (("camera", "BU", "04"), None),
-         "30/2s":                  (("camera", "BU", "05"), None),
-         "30/3s":                  (("camera", "BU", "06"), None),
+    "Burst Rate HERO3": {
+        "3/1s":                   Action(("camera", "BU", "00")),
+        "10/1s":                  Action(("camera", "BU", "02")),
+        "10/2s":                  Action(("camera", "BU", "03")),
+        "30/1s":                  Action(("camera", "BU", "04")),
+        "30/2s":                  Action(("camera", "BU", "05")),
+        "30/3s":                  Action(("camera", "BU", "06")),
     },
-    "Loop Video HERO3" : {
-         "OFF":                    (("camera", "LO", "00"), None),
-         "5min":                   (("camera", "LO", "01"), None),
-         "20Min":                  (("camera", "LO", "02"), None),
-         "60Min":                  (("camera", "LO", "03"), None),
-         "Max":                    (("camera", "LO", "05"), None),
+    "Loop Video HERO3": {
+        "OFF":                    Action(("camera", "LO", "00")),
+        "5min":                   Action(("camera", "LO", "01")),
+        "20Min":                  Action(("camera", "LO", "02")),
+        "60Min":                  Action(("camera", "LO", "03")),
+        "Max":                    Action(("camera", "LO", "05")),
     },
-    "Protune ON/OFF" : {
-         "ON":                     (("camera", "PT", "01"), None),
-         "OFF":                    (("camera", "PT", "00"), None),
+    "Protune ON/OFF": {
+        "ON":                     Action(("camera", "PT", "01")),
+        "OFF":                    Action(("camera", "PT", "00")),
     },
-    "Delete" : {
-         "last":                   (( "camera", "DL"), None),
-         "all":                    (( "camera", "DA"), None),
+    "Delete": {
+        "last":                   Action(( "camera", "DL")),
+        "all":                    Action(( "camera", "DA")),
     },
-    "Photo resolution Black ed" : {
-         "12mpW":                  (("camera", "PR", "05"), None),
-         "7mpW":                   (("camera", "PR", "04"), None),
-         "7mpM":                   (("camera", "PR", "06"), None),
-         "5mpM":                   (("camera", "PR", "03"), None),
+    "Photo resolution Black ed": {
+        "12mpW":                  Action(("camera", "PR", "05")),
+        "7mpW":                   Action(("camera", "PR", "04")),
+        "7mpM":                   Action(("camera", "PR", "06")),
+        "5mpM":                   Action(("camera", "PR", "03")),
     },
-    "Leds" : {
-         "no leds":                (("bacpac", "LB", "00"), None),
-         "2 leds":                 (("camera", "LB", "01"), None),
-         "4 leds":                 (("camera", "LB", "02"), None),
+    "Leds": {
+        "no leds":                Action(("bacpac", "LB", "00")),
+        "2 leds":                 Action(("camera", "LB", "01")),
+        "4 leds":                 Action(("camera", "LB", "02")),
     },
-    "Spot Meter" : {
-         "OFF":                    (("camera", "EX", "00"), None),
-         "ON":                     (("camera", "EX", "01"), None),
+    "Spot Meter": {
+        "OFF":                    Action(("camera", "EX", "00")),
+        "ON":                     Action(("camera", "EX", "01")),
     },
-    "One Button Mode" : {
-         "OFF":                    (("camera", "OB", "00"), None),
-         "ON":                     (("camera", "OB", "01"), None),
+    "One Button Mode": {
+        "OFF":                    Action(("camera", "OB", "00")),
+        "ON":                     Action(("camera", "OB", "01")),
     },
-    "Protune Resolutions HERO2 and HERO3 silver" : {
-         "1080 30 Protune":        (("camera", "VR", "07"), None),
-         "1080 24 Protune":        (("camera", "VR", "08"), None),
-         "1080 25 Protune":        (("camera", "VR", "11"), None),
-         "960 60 Protune":         (("camera", "VR", "09"), None),
+    "Protune Resolutions HERO2 and HERO3 silver": {
+        "1080 30 Protune":        Action(("camera", "VR", "07")),
+        "1080 24 Protune":        Action(("camera", "VR", "08")),
+        "1080 25 Protune":        Action(("camera", "VR", "11")),
+        "960 60 Protune":         Action(("camera", "VR", "09")),
     },
-    "Protune Resolutions HERO3 black ONLY IF PROTUNE IS ON" : {
-         "720 120T":               (("camera", "VV", "00"), None),
-         "960 100T":               (("camera", "VV", "02"), None),
-         "1080 60T":               (("camera", "VV", "03"), None),
-         "1440 48T":               (("camera", "VV", "04"), None),
-         "2.7k 30T":               (("camera", "VV", "05"), None),
-         "4k 15T":                 (("camera", "VV", "06"), None),
-         "2.7KCin24T":             (("camera", "VV", "07"), None),
-         "4kCin12T":               (("camera", "VV", "08"), None),
+    "Protune Resolutions HERO3 black ONLY IF PROTUNE IS ON": {
+        "720 120T":               Action(("camera", "VV", "00")),
+        "960 100T":               Action(("camera", "VV", "02")),
+        "1080 60T":               Action(("camera", "VV", "03")),
+        "1440 48T":               Action(("camera", "VV", "04")),
+        "2.7k 30T":               Action(("camera", "VV", "05")),
+        "4k 15T":                 Action(("camera", "VV", "06")),
+        "2.7KCin24T":             Action(("camera", "VV", "07")),
+        "4kCin12T":               Action(("camera", "VV", "08")),
     },
-    "Auto Power Off" : {
-         "NEVER":                  (("camera", "AO", "00"), None),
-         "60s":                    (("camera", "AO", "01"), None),
-         "120s":                   (("camera", "AO", "02"), None),
-         "300s":                   (("camera", "AO", "03"), None),
+    "Auto Power Off": {
+        "NEVER":                  Action(("camera", "AO", "00")),
+        "60s":                    Action(("camera", "AO", "01")),
+        "120s":                   Action(("camera", "AO", "02")),
+        "300s":                   Action(("camera", "AO", "03")),
     },
-    "Default Mode" : {
-         "Video":                  (("camera", "DM", "00"), None),
-         "Photo":                  (("camera", "DM", "01"), None),
-         "Burst":                  (("camera", "DM", "02"), None),
-         "Timelapse":              (("camera", "DM", "03"), None),
+    "Default Mode": {
+        "Video":                  Action(("camera", "DM", "00")),
+        "Photo":                  Action(("camera", "DM", "01")),
+        "Burst":                  Action(("camera", "DM", "02")),
+        "Timelapse":              Action(("camera", "DM", "03")),
     },
-    "OnScreen Display" : {
-         "OFF":                    (("camera", "OS", "00"), None),
-         "ON":                     (("camera", "OS", "01"), None),
+    "OnScreen Display": {
+        "OFF":                    Action(("camera", "OS", "00")),
+        "ON":                     Action(("camera", "OS", "01")),
     },
-    "Locate" : {
-         "Start":                  (("camera", "LL", "01"), None),
-         "Stop":                   (("camera", "LL", "00"), None),
+    "Locate": {
+        "Start":                  Action(("camera", "LL", "01")),
+        "Stop":                   Action(("camera", "LL", "00")),
     },
-    "Video Mode" : {
-         "NTSC":                   (("camera", "VM", "00"), None),
-         "PAL":                    (("camera", "VM", "01"), None),
+    "Video Mode": {
+        "NTSC":                   Action(("camera", "VM", "00")),
+        "PAL":                    Action(("camera", "VM", "01")),
     },
-    "State" : {
-        "state":                   (("camera", "se"), show_state),
-        "name":                    (("camera", "cv"), str),
-        "password":                (("camera", "sd"), str),
+    "State": {
+        "state":                   Action(("camera", "se"), show_state),
+        "name":                    Action(("camera", "cv"), str),
+        "password":                Action(("camera", "sd"), str),
     }
 }
 
 
 def menu(password):
 
-    from functools import partial
     from termenu.app import AppMenu
     import requests
 
-    def make_action((params, callback)):
+    def make_action(act):
+        params = act.params
+
         def action():
-            assert len(params)<=3
+            assert len(params) <= 3
             url = URL.format(*params[:2], PASSWORD=password)
             if len(params) > 2:
                 url += "&p=%" + params[2]
-            print url, "->",
+            print(url, "->", end=' ')
             ret = requests.get(url)
-            print ret, "->",
-            if callback:
-                print "..."
-                return callback(ret.content)
+            print(ret, "->", end=' ')
+            if act.callback:
+                print("...")
+                return act.callback(ret.content)
             else:
-                print repr(ret.content)
+                print(repr(ret.content))
         return action
 
     def convert(d, typ, parents=[]):
         if isinstance(d, dict):
-            for (k, v) in d.iteritems():
-                for item in convert(v, make_action, parents=parents+[k]):
+            for (k, v) in sorted(d.items()):
+                for item in convert(v, make_action, parents=parents + [k]):
                     yield item
         else:
             yield " - ".join(parents), typ(d)

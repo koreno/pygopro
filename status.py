@@ -1,13 +1,14 @@
-from construct import Struct, Byte, Padding, Flag, Enum, EmbeddedBitStruct, UBInt16
+from construct import Struct, Byte, Padding, Flag, Enum, BitStruct, UBInt16
 
 
-STATUS = Struct("GoProStatus",
+STATUS = Struct(
+    "GoProStatus",
 
     # 1 ?
     Padding(1),
 
     # 2 Current mode. 0-4 matches set CM. 7 - in menu.
-    Enum(Byte("mode"), video=0, photo=1, burst=2, timelapse=3, timer=4, play=5, menu=7 ),
+    Enum(Byte("mode"), video=0, photo=1, burst=2, timelapse=3, timer=4, play=5, menu=7),
 
     # 3 ?
     Padding(1),
@@ -54,7 +55,7 @@ STATUS = Struct("GoProStatus",
     Enum(Byte("leds"), **{"4": 2, "2": 1, "0": 0}),
 
     # 19
-    EmbeddedBitStruct(
+    BitStruct(
         #   bit 1 : 1 = preview on - 0 = preview off
         Flag("preview"),
         #   bit 2 : ?
@@ -79,7 +80,8 @@ STATUS = Struct("GoProStatus",
     # 21    ?
     Padding(1),
 
-    Struct("storage",
+    Struct(
+        "storage",
 
         # 22    Photos available (hi byte) or 255 = no SD Card
         # 23    Photos available (lo byte)

@@ -1,2 +1,4 @@
 construct
-termenu
+# git+git://github.com/koreno/termenu.git#egg=termenu
+python-crontab
+requests

@@ -1,15 +1,13 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3.7
 
 from subprocess import check_call
 from contextlib import contextmanager
-from urllib2 import URLError
-import urllib2
+from urllib.error import URLError
+import urllib.request
 import time
 import sys
 import re
 import os
-
-# author: Adrian Sitterle
 
 url_base = "http://10.5.5.9"
 url_media = ":8080/videos/DCIM/"
@@ -42,16 +40,16 @@ def new_cron_specifictime(minute, hour, cmd):
 
     tab = CronTab(user=True)
 
-    cron_job = tab.new(cmd, comment='via %s' % __file__)
+    cron_job = tab.new(cmd, comment=f'via {__file__}')
     cron_job.minute.on(minute)
     cron_job.hour.on(hour)
 
+    print((tab.render()))
     if not cron_job.is_valid():
-        print tab.render()
         raise Exception("problem creating cron job")
 
-    print tab.render()
     tab.write()
+    print("cron job installed")
 
 
 def new_cron_between(hour_start, hour_end, repeat_every, cmd):
@@ -60,28 +58,30 @@ def new_cron_between(hour_start, hour_end, repeat_every, cmd):
 
     tab = CronTab(user=True)
 
-    cron_job = tab.new(cmd, comment='via %s' % __file__)
+    cron_job = tab.new(cmd, comment=f'via {__file__}')
     cron_job.minute.every(repeat_every)
 
     if hour_start < hour_end:
         cron_job.hour.during(hour_start, hour_end)
 
+    print((tab.render()))
     if not cron_job.is_valid():
-        print tab.render()
         raise Exception("problem creating cron job")
 
-    print tab.render()
-    tab.write()     
+    tab.write()
+    print("cron job installed")
+
 
 if SHOW_PROGRESS:
     def go_sleep(s):
         for i in range(s, 0, -1):
-            print i, "\r",
+            print(i, "\r", end=' ')
             sys.stdout.flush()
             time.sleep(1)
-        print
+        print()
 else:
     go_sleep = time.sleep
+
 
 def wakeup(func):
     def f(self, *args, **kwargs):
@@ -98,7 +98,7 @@ class GoPro(object):
 
     def send_cmd(self, cmd, sleep=1):
         url = url_base + cmd.format(self.password)
-        result = urllib2.urlopen(url).read()
+        result = urllib.request.urlopen(url).read()
         go_sleep(sleep)
         return result
 
@@ -115,17 +115,17 @@ class GoPro(object):
                 self.off()
 
     def off(self):
-        print "- off"
+        print("- off")
         self.send_cmd(url_gopro_off)
 
     def wake(self):
-        print "- wake"
+        print("- wake")
         self.send_cmd(url_gopro_on, sleep=5)
         # wait till gopro wakes up
 
     @wakeup
     def setup(self):
-        print "- setup"
+        print("- setup")
         self.send_cmd(url_vol_no)
         self.send_cmd(url_led_no)
         self.send_cmd(url_autooff_no)
@@ -133,7 +133,7 @@ class GoPro(object):
 
     @wakeup
     def takepic(self):
-        print "- takepic"
+        print("- takepic")
         self.send_cmd(url_mode_photo, sleep=5)
         # wait for photo mode to turn on
         self.send_cmd(url_shutter_on, sleep=5)
@@ -141,21 +141,22 @@ class GoPro(object):
 
     @wakeup
     def download(self, last=True):
-        print "- download"
+        print("- download")
         url = url_base + url_media
-        result = urllib2.urlopen(url).read()
-        dirs = re.findall('href="(\d\d\dGOPRO)/"', result)
+        result = urllib.request.urlopen(url).read()
+        dirs = re.findall(r'href="(\d\d\dGOPRO)/"', result)
         if not dirs:
             raise Exception("No Media Folders")
         url += "/" + dirs[-1]
-        result = urllib2.urlopen(url).read()
-        pics = re.findall('href="(GOPR\d+\.JPG)"', result)
+        result = urllib.request.urlopen(url).read()
+        pics = re.findall(r'href="(GOPR\d+\.JPG)"', result)
         if not pics:
             raise Exception("No Pictures")
+
         def download_pic(url, pic):
             url += "/" + pic
-            result = urllib2.urlopen(url)
-            print "Downloading %s (%s bytes)..." % (pic, result.headers['content-length'])
+            result = urllib.request.urlopen(url)
+            print(f"Downloading {pic} ({result.headers['content-length']} bytes)...")
             with open(pic, "wb") as f:
                 while True:
                     chunk = result.read(16*1024)
@@ -163,7 +164,7 @@ class GoPro(object):
                         break
                     f.write(chunk)
                     if SHOW_PROGRESS:
-                        print f.tell(), "\r",
+                        print(f.tell(), "\r", end=' ')
                 if SHOW_PROGRESS:
                     sys.stdout.flush()
             return pic
@@ -175,7 +176,7 @@ class GoPro(object):
 
     @wakeup
     def delete(self, last=True):
-        print "- delete"
+        print("- delete")
         self.send_cmd(url_delete_last if last else url_delete_all, sleep=5)
 
     @wakeup
@@ -183,7 +184,7 @@ class GoPro(object):
         return self.send_cmd(url_status)
 
     def lapse(self):
-        print "- lapse"
+        print("- lapse")
         with self.awake():
             self.takepic()
             pic = self.download(last=True)
@@ -200,20 +201,20 @@ def execute(*params):
     try:
         check_call(params)
     except:
-        print(" ".join(params))
+        print("error running: ", *params)
         raise
 
 
 def resize(pic, ratio):
-    print "- resizing image"
-    params = ["-resize", "{0}%".format(int(100%ratio)), pic]
+    print("- resizing image")
+    params = ["-resize", f"{int(100 % ratio)}%", pic]
     if SHOW_PROGRESS:
         params.insert(0, "-monitor")
     execute("/usr/bin/mogrify", *params)
 
 
 def make_timelapse(anim):
-    print "- making animation"
+    print("- making animation")
     params = ["-morph", "3", "*.JPG", anim]
     if SHOW_PROGRESS:
         params.insert(0, "-monitor")
@@ -221,7 +222,7 @@ def make_timelapse(anim):
 
 
 def upload(src):
-    print("- upload (%s)" % src)
+    print((f"- upload ({src})"))
     params = ["upload", src, "."]
     if SHOW_PROGRESS:
         params.insert(0, "-p")
@@ -231,22 +232,26 @@ def upload(src):
 
 def set_timelapse(args):
     if args.setup:
-        print "seting up gopro for timelpase"
+        print("seting up gopro for timelpase")
         with GoPro(args.password).awake() as gopro:
             gopro.setup()
 
     from_, to = args.timespan
 
-    import sys, os.path
+    import sys
+    import os.path
     path = os.path.abspath(__file__)
 
-    new_cron_between(from_, to, args.interval, "%s %s -p %s lapse 2>&1 | logger -t gopro" % (sys.executable, path, args.password))
+    new_cron_between(
+        from_, to, args.interval,
+        f"{sys.executable} {path} -p {args.password} lapse 2>&1 | logger -t gopro")
 
 
 def run_action(args):
-    print "running action: ", args.action
+    print("running action: ", args.action)
     gopro = GoPro(args.password)
-    func = getattr(gopro, args.action)()
+    func = getattr(gopro, args.action)
+    func()
 
 
 def restart():
@@ -254,9 +259,10 @@ def restart():
     os.system("sudo reboot")
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
 
     import argparse
+    import socket
 
     parser = argparse.ArgumentParser(description='GoPro Commander')
     parser.add_argument('-p', '--password', type=str, help='GoPro WiFi Password')
@@ -282,7 +288,6 @@ if __name__=="__main__":
     try:
         args.func(args)
     except URLError as e:
-        if e.reason.errno in (110, 113):
+        if isinstance(e.reason, socket.error) and e.reason.errno in (110, 113):
             restart()
         raise
-
